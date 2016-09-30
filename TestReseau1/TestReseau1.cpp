@@ -5,6 +5,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
+#include <string.h>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -26,20 +27,32 @@ void ShutdownSockets()
 	#endif
 }
 
+int TransformeAdresse(char adresse[]) {
+	char tmpChar[5];
+	int i = 0;
+	while (tmpChar[i] != '.' || tmpChar[i] != '/o') {
+
+	}
+}
+
 int main()
 {
-	printf("Configuration du socket\n");
+
+	InitializeSockets();
+
+	printf("\nConfiguration du socket");
 	int handle = socket(AF_INET,
 						SOCK_DGRAM,
 						IPPROTO_UDP);
 	
-	printf("Test du socket : ");
+	printf("\nTest du socket : ");
 	if (handle <= 0)
 	{
-		printf("échec de création du socket!\n");
+		printf("\nvaleur de handle : %i ", handle);
+		printf("\nechec de creation du socket!");
 		return false;
 	}
-	printf("réussi!");
+	printf("reussi!");
 
 	sockaddr_in address;
 	address.sin_family = AF_INET;
@@ -50,9 +63,10 @@ int main()
 		(const sockaddr*)&address,
 		sizeof(sockaddr_in)) < 0) 
 	{
-		printf("échec du bind socket!\n");
+		printf("\nechec du bind socket!");
 		return false;
 	}
+	printf("\nBind reussi");
 
 
 	DWORD nonBlocking = 1;
@@ -60,10 +74,10 @@ int main()
 		FIONBIO,
 		&nonBlocking) != 0)
 	{
-		printf("échec du parametrage non-blocking\n");
+		printf("\nechec du parametrage non-blocking");
 		return false;
 	}
-
+	printf("\nParametrage non-blocking reussi");
 
 
 	getchar();
