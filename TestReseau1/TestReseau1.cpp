@@ -37,7 +37,7 @@ int TransformeAdresse(char adresse[]) {
 
 int main()
 {
-
+	bool serveurOn = false;
 	InitializeSockets();
 
 	printf("\nConfiguration du socket");
@@ -78,6 +78,12 @@ int main()
 		return false;
 	}
 	printf("\nParametrage non-blocking reussi");
+	serveurOn = true;
+	while (serveurOn) {
+
+
+
+	}
 
 
 	getchar();
