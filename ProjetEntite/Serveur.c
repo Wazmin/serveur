@@ -17,6 +17,7 @@ typedef struct sockaddr SOCKADDR;
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "Fonctions.h"
 #define PORT 23
 #define TAILLE_BUFFER 32
 
