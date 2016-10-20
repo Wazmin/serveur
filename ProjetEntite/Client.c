@@ -18,7 +18,7 @@ typedef struct sockaddr SOCKADDR;
 #include <stdio.h>
 #include <stdlib.h>
 #include "Fonctions.h"
-#define PORT 23
+#define PORT 5123
 #define TAILLE_BUFFER 32
 
 typedef enum
@@ -49,6 +49,7 @@ int LOLmain(void)
 		sin.sin_addr.s_addr = inet_addr("10.1.63.231");
 		sin.sin_family = AF_INET;
 		sin.sin_port = htons(PORT);
+		
 
 		/* Si le client arrive à se connecter */
 		if (connect(sock, (SOCKADDR*)&sin, sizeof(sin)) != SOCKET_ERROR)
