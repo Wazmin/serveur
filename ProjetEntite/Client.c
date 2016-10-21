@@ -17,9 +17,7 @@ typedef struct sockaddr SOCKADDR;
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "Fonctions.h"
-#define PORT 5123
-#define TAILLE_BUFFER 32
+#include "ClientFunctions.h"
 
 typedef enum
 {
@@ -27,50 +25,17 @@ typedef enum
 }
 Bool;
 
-int LOLmain(void)
+int main(void)
 {
-#if defined (WIN32)
-	WSADATA WSAData;
-	int erreur = WSAStartup(MAKEWORD(2, 2), &WSAData);
-#else
-	int erreur = 0;
-#endif
+	char adresseServeur[32], pseudo[32];
+	fprintf(stdout, "saisir l'adresse IP du serveur : ");
+	fgets(adresseServeur, 32, stdin);
+	fprintf(stdout,"saisir votre pseudo :");
+	fgets(pseudo, 32, stdin);
 
-	SOCKET sock;
-	SOCKADDR_IN sin;
-	char buffer[TAILLE_BUFFER];
-
-	if (!erreur)
-	{
-		/* Création de la socket */
-		sock = socket(AF_INET, SOCK_STREAM, 0);
-
-		/* Configuration de la connexion */
-		sin.sin_addr.s_addr = inet_addr("10.1.63.231");
-		sin.sin_family = AF_INET;
-		sin.sin_port = htons(PORT);
-		
-
-		/* Si le client arrive à se connecter */
-		if (connect(sock, (SOCKADDR*)&sin, sizeof(sin)) != SOCKET_ERROR)
-			printf("Connexion à %s sur le port %d\n", inet_ntoa(sin.sin_addr), htons(sin.sin_port));
-		else
-			printf("Impossible de se connecter\n");
-		Bool isActive = True;
-
-		while (isActive) {
-			if (recv(sock, buffer, TAILLE_BUFFER, 0) != SOCKET_ERROR)
-				printf("Recu : %s\n", buffer);
-		}
-
-
-		/* On ferme la socket précédemment ouverte */
-		closesocket(sock);
-
-#if defined (WIN32)
-		WSACleanup();
-#endif
-	}
+	init();
+	app(adresseServeur, pseudo);
+	end();
 
 	return EXIT_SUCCESS;
 }
