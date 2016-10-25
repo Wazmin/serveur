@@ -21,9 +21,15 @@
     <ClCompile Include="Serveur.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Entite.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Serveur.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Entite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
