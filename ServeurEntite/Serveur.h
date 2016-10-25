@@ -31,15 +31,18 @@ private:
 	Entite Orthos;
 	//timer
 	const int timerSendCoord = 1000;
-
+	//format de communication
+	const std::string MSG_COORD = "01-";
+	const std::string MSG_MOOD = "02-";
+	const std::string MSG_FILE_TRANSFERT = "03-";
 public:
 	Serveur();
 	int Initialiser(int numPort = 1234);
 	int Lancer();
 	int LancerThreadServeurCoord();
 	void ArreterServeur();
-	static void*  callMemberFunction(void *arg) { return ((Serveur*)arg)->ThreadServeurCoord(); }
-
+	static void*  callThreadServeur(void *arg) { return ((Serveur*)arg)->ThreadServeurCoord(); }
+	void Receptionniste(std::string messageEntrant);
 private:
 	void * ThreadServeurCoord();
 	void * LancerThreadClient(void * p_data);

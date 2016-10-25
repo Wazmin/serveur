@@ -77,7 +77,7 @@ int Serveur::Lancer() {
 // fonction qui lance le thread serveur pour l'envoi des coordonnees
 int Serveur::LancerThreadServeurCoord() {
 
-	if (pthread_create(&threadServeur, NULL, Serveur::callMemberFunction, this) != 0) {
+	if (pthread_create(&threadServeur, NULL, Serveur::callThreadServeur, this) != 0) {
 		//impossible de lancer le thread serveur !
 		std::cerr << "impossible de lancer le thread Serveur !" << std::endl;
 		closesocket(mySocket);
@@ -94,6 +94,25 @@ void Serveur::ArreterServeur() {
 	pthread_cancel(threadServeur);
 	pthread_join(threadServeur, NULL);
 	enMarche = false;
+}
+
+// Receptionniste pour trier les messages entrants
+void Serveur::Receptionniste(std::string messageEntrant) {
+	std::string enteteMessage = messageEntrant.substr(0, 3);
+	
+	//tri
+	if (enteteMessage.compare(MSG_COORD) != 0) {
+
+	}
+	else if (enteteMessage.compare(MSG_MOOD) != 0) {
+
+	}
+	else if (enteteMessage.compare(MSG_FILE_TRANSFERT) != 0) {
+
+	}
+	else {
+
+	}
 }
 
 // thread du serveur pour envois des coordonnées
@@ -130,6 +149,16 @@ void * Serveur::ThreadServeurCoord() {
 			}
 			delete[] buffer;
 		}	
+	}
+	return NULL;
+}
+
+// Thread lancé pour chaque client des lors qu'ils se connectent
+void * Serveur::LancerThreadClient(void * p_data) {
+
+	// boucle principale
+	while (enMarche) {
+
 	}
 	return NULL;
 }
