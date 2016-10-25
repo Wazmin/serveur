@@ -37,7 +37,7 @@ public:
 	void SaveRessources();
 	SouvenirData GetSouvenir();
 	void AddSouvenir(SouvenirData sd);
-	void InsertSouvenir(SouvenirData sd);
+	void InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant);
 	bool CanMeetOrthos(__int64 IMEI);
 	void MeetOrthos(__int64 IMEI);
 };
