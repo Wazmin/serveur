@@ -96,25 +96,6 @@ void Serveur::ArreterServeur() {
 	enMarche = false;
 }
 
-// Receptionniste pour trier les messages entrants
-void Serveur::Receptionniste(std::string messageEntrant) {
-	std::string enteteMessage = messageEntrant.substr(0, 3);
-	
-	//tri
-	if (enteteMessage.compare(MSG_COORD) != 0) {
-
-	}
-	else if (enteteMessage.compare(MSG_MOOD) != 0) {
-
-	}
-	else if (enteteMessage.compare(MSG_FILE_TRANSFERT) != 0) {
-
-	}
-	else {
-
-	}
-}
-
 // thread du serveur pour envois des coordonnées
 // utilisation d'un timer pour la frequence d'envoi
 void * Serveur::ThreadServeurCoord() {

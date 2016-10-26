@@ -1,12 +1,9 @@
 #ifndef SERVEUR_H
 #define SERVEUR_H
 #define HAVE_STRUCT_TIMESPEC
-#include <winsock2.h>
-#include <pthread.h>
-#include <iostream>
-#include <vector>
-#include <chrono>
+
 #include "Entite.h"
+#include "FonctionsServeur.h"
 
 //struct thread_param {
 //	Serveur * ser;
@@ -42,7 +39,6 @@ public:
 	int LancerThreadServeurCoord();
 	void ArreterServeur();
 	static void*  callThreadServeur(void *arg) { return ((Serveur*)arg)->ThreadServeurCoord(); }
-	void Receptionniste(std::string messageEntrant);
 private:
 	void * ThreadServeurCoord();
 	void * LancerThreadClient(void * p_data);

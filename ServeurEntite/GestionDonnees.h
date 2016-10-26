@@ -6,11 +6,12 @@
 #include <string>
 #include <vector>
 #include <random>
+#include <ctime>
 
 struct UserData {
 	__int64 IMEI;
-	int dateTimeInSecond;
-	int timerNextMeetInSecond;
+	int dateTimeInSecond;//time of the lastest meeting
+	int timerNextMeetInSecond;//time in second before the next meeting
 };
 
 enum TypeSouvenir {
@@ -22,24 +23,29 @@ struct SouvenirData{
 	TypeSouvenir type;
 	std::string nomDuFichier;
 	int dateTimeInSecond;
+	std::string phrase;
 };
 
 class GestionDonnees {
 private:
 	std::vector<UserData> vecUserData;
 	std::vector<SouvenirData>  vecSouvenirData;
-	const std::string nomFichierUser = "UserData";
-	const std::string nomFichierSouvenir = "SouvenirData";
 	const int timeBeforeNextMeeting = 300; //in seconds
 public:
+	const std::string nomFichierUser = "UserData";
+	const std::string nomFichierSouvenir = "SouvenirData";
+	int nbImages;
+	int nbTextes;
 	GestionDonnees();
 	void LoadRessources();
 	void SaveRessources();
+	void AddUser(__int64 IMEI);
 	SouvenirData GetSouvenir();
-	void AddSouvenir(SouvenirData sd);
-	void InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant);
+	std::string AddSouvenir(SouvenirData sd);
+	std::string InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant);
 	bool CanMeetOrthos(__int64 IMEI);
-	void MeetOrthos(__int64 IMEI);
+private:
+	bool FindUserIndice(__int64 numIMEI, int &indice);
 };
 
 #endif
