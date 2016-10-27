@@ -34,6 +34,7 @@ private:
 public:
 	const std::string nomFichierUser = "UserData";
 	const std::string nomFichierSouvenir = "SouvenirData";
+	const std::string nomRepSouvenirData = "Souvenirs/";
 	int nbImages;
 	int nbTextes;
 	GestionDonnees();
@@ -41,8 +42,8 @@ public:
 	void SaveRessources();
 	void AddUser(__int64 IMEI);
 	SouvenirData GetSouvenir();
-	std::string AddSouvenir(SouvenirData sd);
-	std::string InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant);
+	void AddSouvenir(SouvenirData sd);
+	void InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant);
 	bool CanMeetOrthos(__int64 IMEI);
 private:
 	bool FindUserIndice(__int64 numIMEI, int &indice);

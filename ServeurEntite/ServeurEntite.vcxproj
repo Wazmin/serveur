@@ -149,14 +149,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Entite.cpp" />
-    <ClCompile Include="FonctionsServeur.cpp" />
     <ClCompile Include="GestionDonnees.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Serveur.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Entite.h" />
-    <ClInclude Include="FonctionsServeur.h" />
     <ClInclude Include="GestionDonnees.h" />
     <ClInclude Include="Serveur.h" />
   </ItemGroup>

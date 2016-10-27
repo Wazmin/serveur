@@ -117,33 +117,15 @@ SouvenirData GestionDonnees::GetSouvenir() {
 
 // ajout d'un souvenir, on insere au debut
 // retourne le nouveau nom du fichier
-std::string GestionDonnees::AddSouvenir(SouvenirData sd) {
+void GestionDonnees::AddSouvenir(SouvenirData sd) {
 	std::vector<SouvenirData>::iterator it;
 	it = vecSouvenirData.begin();
 	vecSouvenirData.insert(it, sd);
-	if(vecSouvenirData[0].type == TYPE_SOUVENIR_IMAGE){
-		nbImages++;
-		vecSouvenirData[0].nomDuFichier = "IMG" + nbImages;
-	}
-	else {
-		nbTextes++;
-		vecSouvenirData[0].nomDuFichier = "TXT" + nbTextes;
-	}
-	return vecSouvenirData[0].nomDuFichier;
 }
 
 // ajout d'un souvenir a une date differee
 // recherche dichotomique, retourne le nouveau nom du fichier
-std::string GestionDonnees::InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant) {
-	//passage norme de nommage
-	if (sd.type == TYPE_SOUVENIR_IMAGE) {
-		nbImages++;
-		sd.nomDuFichier = "IMG" + nbImages;
-	}
-	else {
-		nbTextes++;
-		sd.nomDuFichier = "TXT" + nbTextes;
-	}
+void GestionDonnees::InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant) {
 	//recherche et insertion du souvenir
 	int bas(0), milieu(0), haut(vecSouvenirData.size()-1);
 	std::vector<SouvenirData>::iterator it;
@@ -153,7 +135,6 @@ std::string GestionDonnees::InsertSouvenir(SouvenirData sd, int dateTimeSouvenir
 		if (dateTimeSouvenirSuivant == vecSouvenirData[milieu].dateTimeInSecond) {
 			it += milieu;
 			vecSouvenirData.insert(it, sd);
-			return sd.nomDuFichier;
 		}
 		else if (vecSouvenirData[milieu].dateTimeInSecond > dateTimeSouvenirSuivant) {
 			bas = milieu + 1;

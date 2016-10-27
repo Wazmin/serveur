@@ -27,9 +27,6 @@
     <ClCompile Include="GestionDonnees.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FonctionsServeur.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Serveur.h">
@@ -39,9 +36,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GestionDonnees.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FonctionsServeur.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
