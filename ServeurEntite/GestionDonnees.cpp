@@ -14,8 +14,10 @@ if (!fileUserData)
 	std::cerr << "Erreur de lecture UserData\n";
 	return;
 }
-
-while (!fileUserData.eof())
+fileUserData.seekg(0, fileUserData.end);
+int tailleFic = fileUserData.tellg();
+fileUserData.seekg(0, fileUserData.beg);
+while (!fileUserData.eof() && tailleFic>0)
 {
 	struct UserData mUserData;
 	fileUserData >> mUserData.IMEI;
@@ -32,7 +34,11 @@ if (!fileSouvenirData) {
 	return;
 }
 int tmp;
-while (!fileSouvenirData.eof())
+
+fileSouvenirData.seekg(0, fileSouvenirData.end);
+tailleFic = fileSouvenirData.tellg();
+fileSouvenirData.seekg(0, fileSouvenirData.beg);
+while (!fileSouvenirData.eof() && tailleFic>0)
 {
 	struct SouvenirData mSouvenirData;
 	fileSouvenirData >> tmp;

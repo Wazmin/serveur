@@ -17,8 +17,6 @@ int Serveur::Initialiser(int numPort) {
 	this->sin.sin_family = AF_INET;
 	this->sin.sin_port = htons(numPort);
 
-	//pthread_mutex_init(&mutex_coord,NULL);
-	mutex_coord = PTHREAD_MUTEX_INITIALIZER;
 	Orthos.tmpInit();
 	mesDonnees.LoadRessources();
 
@@ -140,9 +138,13 @@ void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, S
 		// recuperation de la taille
 		int tailleMsg = std::stoi(infoTaille);
 		RecvFileFromClient(theClientSocket,tailleMsg,typeFichier[0], serv);
+
+		// on renvoie un souvenir
+		SendFileToClient(theClientSocket, serv);
 	}
 }
 
+//sous fonction pour l'envoi de donnée
 void Serveur::SendMessageToClient(const SOCKET &clientSocket, const std::string &msg) {
 	int tailleMsg= msg.length() + 1;
 	char *buffer = new char[tailleMsg];
@@ -151,6 +153,86 @@ void Serveur::SendMessageToClient(const SOCKET &clientSocket, const std::string 
 	delete[] buffer;
 }
 
+// envoi d'un fichier au client ciblé
+void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv) {
+	//recuperation d'un souvenir
+	SouvenirData sd = serv->mesDonnees.GetSouvenir();
+
+	//essai de l'ouverture du fichier
+	std::ifstream fichierSouvenir(serv->mesDonnees.nomRepSouvenirData +sd.nomDuFichier);
+	bool erreur = false;
+	if (fichierSouvenir) {
+		fichierSouvenir.seekg(0, fichierSouvenir.end);
+		int tailleFic = fichierSouvenir.tellg();
+		fichierSouvenir.seekg(0, fichierSouvenir.beg);
+
+		if (tailleFic == EOF) {
+			erreur = true;
+		}
+		else {
+			//envoi de l'entete
+			std::string str = MsgTypeString[SERVER_SEND_SOUVENIR] + std::to_string(tailleFic);
+			if (sd.type == TYPE_SOUVENIR_IMAGE) {
+				str += "-i-";
+			}
+			else if (sd.type == TYPE_SOUVENIR_TEXTE) {
+				str += "-t-";
+			}
+			str += sd.nomDuFichier;
+			str += "-";
+			//07-[tailleFichier]-[type]-[nomFichier]
+			SendMessageToClient(clientSocket, str);
+
+			if (tailleFic > 0)
+			{
+				char buffer[1024];
+				do
+				{
+					size_t num = min(tailleFic, sizeof(buffer));
+					fichierSouvenir.read(buffer,num);//fread(buffer, 1, num, f);
+					num = fichierSouvenir.gcount();
+					if (num < 1)
+						erreur= false;
+					if (!SendData(clientSocket, buffer, num))
+						erreur= false;
+					tailleFic -= num;
+				} while (tailleFic > 0 && !erreur);
+			}
+		}
+		fichierSouvenir.close();
+		std::cout << "Fichier souvenir envoye" << std::endl;
+	}
+	else {
+		int i = 0;
+	}
+}
+
+//sous fonction
+bool Serveur::SendData(SOCKET sock, void *buf, int buflen) {
+	unsigned char *pbuf = (unsigned char *)buf;
+
+	while (buflen > 0)
+	{
+		int num = send(sock, (char *)pbuf, buflen, 0);
+		if (num == SOCKET_ERROR)
+		{
+			if (WSAGetLastError() == WSAEWOULDBLOCK)
+			{
+				// optional: use select() to check for timeout to fail the send
+				continue;
+			}
+			return false;
+		}
+
+		pbuf += num;
+		buflen -= num;
+	}
+
+	return true;
+}
+
+
+//Fonction de reception de fichier
 void Serveur::RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, char type, Serveur * serv) {
 	std::string nomFichier;
 	SouvenirData sd;
@@ -173,6 +255,9 @@ void Serveur::RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, 
 	sd.dateTimeInSecond = std::time(nullptr);
 
 	if (true) {//sd.type == TYPE_SOUVENIR_IMAGE
+
+		//mutex pour ecriture lecture fichier
+		pthread_mutex_lock(&mutex_lectureEcritureFichier);
 		// cas d'un fichier image
 		std::cout << "Reception d'un fichier en cours" << std::endl;
 		std::ofstream fichierSouvenir(serv->mesDonnees.nomRepSouvenirData + nomFichier, std::ofstream::binary);
@@ -216,6 +301,7 @@ void Serveur::RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, 
 			if (sd.type == TYPE_SOUVENIR_IMAGE)serv->mesDonnees.nbImages -= 1;
 			else serv->mesDonnees.nbTextes -= 1;
 		}
+		pthread_mutex_unlock(&mutex_lectureEcritureFichier);
 	}	
 }
 
@@ -244,7 +330,7 @@ bool Serveur::ReadData(SOCKET sock, void *buf, int buflen) {
 void * Serveur::ThreadServeurCoord() {
 	// creation d'un timer
 	int tp = std::time(nullptr);
-	int cran = tp + timerSendCoord;
+	int cran = tp + 2;
 
 	// besoin pour le message
 	std::string message; 
@@ -256,11 +342,13 @@ void * Serveur::ThreadServeurCoord() {
 		tp = std::time(nullptr);
 
 		if (tp >= cran) {
-			cran = tp + timerSendCoord;
+			cran = tp + 2;
 			pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 			// mutex pour lire une bonne donnée
 			pthread_mutex_lock(& mutex_coord);
-				message = Orthos.GetSDCoord();
+			message = "";
+			message += MsgTypeString[SEND_COOR_TO_CLIENT];
+				message += Orthos.GetSDCoord();
 				size = message.size() + 1;
 				buffer = new char[size];
 				strncpy_s(buffer, size, message.c_str(), size);
@@ -271,9 +359,10 @@ void * Serveur::ThreadServeurCoord() {
 			for (const auto &sockClient : vecSocketClient) {
 				//envoyer les coordonnees
 				send(sockClient, buffer, len, 0);
+				//std::cout << "envoi coord" << std::endl;
 			}
-			pthread_mutex_unlock(&mutex_vecSockCli);
 			delete[] buffer;
+			pthread_mutex_unlock(&mutex_vecSockCli);
 		}	
 	}
 	return NULL;

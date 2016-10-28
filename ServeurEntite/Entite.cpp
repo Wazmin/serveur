@@ -10,7 +10,7 @@ Entite::Entite(float x, float y) {
 
 // construction d'un string pour envoi des coordonnees
 std::string Entite::GetSDCoord() {
-	std::string str = "01-";
+	std::string str;
 	str += std::to_string(coord._x) + "-";
 	str += std::to_string(coord._y) + "_";
 	return str;
@@ -18,7 +18,7 @@ std::string Entite::GetSDCoord() {
 
 // construction d'un string pour envoi de l'humeur
 std::string Entite::GetSDMood() {
-	std::string str = "02-";
+	std::string str;
 	str += "1";
 	return str;
 }

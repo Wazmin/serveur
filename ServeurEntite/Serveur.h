@@ -19,8 +19,10 @@
 
 static pthread_mutex_t mutex_vecSockCli = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_coord = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mutex_lectureEcritureFichier = PTHREAD_MUTEX_INITIALIZER;
 class Serveur;
 enum MessageType {
+	SEND_COOR_TO_CLIENT,//03-
 	CAN_I_MEET_ORTHOS,//04-
 	REPONSE_MEETING,//05-
 	CLIENT_SEND_SOUVENIR,//06-
@@ -29,6 +31,7 @@ enum MessageType {
 
 };
 static const char* MsgTypeString[] = {
+	"03-",
 	"04-",
 	"05-",
 	"06-",
@@ -73,12 +76,15 @@ public:
 	void ArreterServeur();
 	bool Triage(const std::string &str, const MessageType &msgType);
 	void Receptionniste(char *incomingMsg, const SOCKET &theClientSocket,Serveur * serv);
+public:
 	static void*  callThreadServeur(void *arg) { return ((Serveur*)arg)->ThreadServeurCoord(); }
 	static void*  callThreadClient(void *arg) { return ((Serveur*)arg)->ThreadClient(arg); }
 private:
 	void * ThreadServeurCoord();
 	void * ThreadClient(void * p_data);
 	void SendMessageToClient(const SOCKET &clientSocket, const std::string &msg);
+	void SendFileToClient(const SOCKET &clientSocket, Serveur * serv);
+	bool SendData(SOCKET sock, void *buf, int buflen);
 	void RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, char type, Serveur * serv);
 	bool ReadData(SOCKET sock, void *buf, int tailleFichier);
 };
