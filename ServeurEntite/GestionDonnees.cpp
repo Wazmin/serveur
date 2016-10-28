@@ -118,6 +118,7 @@ SouvenirData GestionDonnees::GetSouvenir() {
 	std::uniform_int_distribution<int> distribution(1, size);
 	int dice_roll = distribution(generator);
 	dice_roll--;
+	std::cout << "tirage souvenir = " << dice_roll << std::endl;
 	return vecSouvenirData[dice_roll];
 }
 

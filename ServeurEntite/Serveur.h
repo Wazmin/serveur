@@ -12,6 +12,7 @@
 #include <vector>
 #include <cmath>
 #include <mutex>
+
 #include "Entite.h"
 #include "GestionDonnees.h"
 

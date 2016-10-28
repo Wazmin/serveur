@@ -49,7 +49,7 @@ int Serveur::Lancer() {
 
 	std::cout << "Le serveur est lance, en ecoute sur le port :" << numPort << std::endl;
 	enMarche = true;
-	LancerThreadServeurCoord();
+	//LancerThreadServeurCoord();
 	cin = { 0 };
 	int cinLen = sizeof(cin);
 
@@ -138,7 +138,8 @@ void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, S
 		// recuperation de la taille
 		int tailleMsg = std::stoi(infoTaille);
 		RecvFileFromClient(theClientSocket,tailleMsg,typeFichier[0], serv);
-
+		
+		Sleep(500);
 		// on renvoie un souvenir
 		SendFileToClient(theClientSocket, serv);
 	}
@@ -156,10 +157,11 @@ void Serveur::SendMessageToClient(const SOCKET &clientSocket, const std::string 
 // envoi d'un fichier au client ciblé
 void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv) {
 	//recuperation d'un souvenir
+	pthread_mutex_lock(&mutex_lectureEcritureFichier);
 	SouvenirData sd = serv->mesDonnees.GetSouvenir();
 
 	//essai de l'ouverture du fichier
-	std::ifstream fichierSouvenir(serv->mesDonnees.nomRepSouvenirData +sd.nomDuFichier);
+	std::ifstream fichierSouvenir(serv->mesDonnees.nomRepSouvenirData +sd.nomDuFichier, std::ifstream::binary);
 	bool erreur = false;
 	if (fichierSouvenir) {
 		fichierSouvenir.seekg(0, fichierSouvenir.end);
@@ -183,12 +185,14 @@ void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv) {
 			//07-[tailleFichier]-[type]-[nomFichier]
 			SendMessageToClient(clientSocket, str);
 
+			std::string trolll = "a effeacer";
+			Sleep(500);
 			if (tailleFic > 0)
 			{
 				char buffer[1024];
 				do
 				{
-					size_t num = min(tailleFic, sizeof(buffer));
+					int num = min(tailleFic, sizeof(buffer));
 					fichierSouvenir.read(buffer,num);//fread(buffer, 1, num, f);
 					num = fichierSouvenir.gcount();
 					if (num < 1)
@@ -205,6 +209,7 @@ void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv) {
 	else {
 		int i = 0;
 	}
+	pthread_mutex_unlock(&mutex_lectureEcritureFichier);
 }
 
 //sous fonction
