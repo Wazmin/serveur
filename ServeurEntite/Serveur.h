@@ -11,9 +11,15 @@
 #include <pthread.h>
 #include <vector>
 #include <cmath>
+#include <mutex>
 #include "Entite.h"
 #include "GestionDonnees.h"
 
+#define MAX_MSG_SIZE 1024
+
+static pthread_mutex_t mutex_vecSockCli = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mutex_coord = PTHREAD_MUTEX_INITIALIZER;
+class Serveur;
 enum MessageType {
 	CAN_I_MEET_ORTHOS,//04-
 	REPONSE_MEETING,//05-
@@ -30,6 +36,12 @@ static const char* MsgTypeString[] = {
 	"08-"
 };
 
+struct ToThreadArg {
+	SOCKET sock;
+	Serveur *server;
+};
+
+
 class Serveur {
 private:
 	WSAData WSAData;
@@ -41,29 +53,33 @@ private:
 	SOCKADDR_IN cin;
 	// Threads
 	pthread_t threadServeur;
-	pthread_mutex_t mutex_coord;
-	std::vector<SOCKET> vecSocketClient;
-	std::vector<pthread_t> vecThreadClient;
 	//partie entite
 	Entite Orthos;
 	//timer
-	const int timerSendCoord = 1000;
+	const int timerSendCoord = 1;
 	//partie gestion de donnees
 	GestionDonnees mesDonnees;
+public:
+	std::vector<SOCKET> vecSocketClient;
+	std::vector<pthread_t> vecThreadClient;
+	std::vector<ToThreadArg> vecToThreadArg;
+	
 public:
 	Serveur();
 	int Initialiser(int numPort = 1234);
 	int Lancer();
 	int LancerThreadServeurCoord();
+	int LancerThreadClient(ToThreadArg &tta);
 	void ArreterServeur();
 	bool Triage(const std::string &str, const MessageType &msgType);
-	void Receptionniste(std::string &str, const SOCKET &theClientSocket, char * buffer);
+	void Receptionniste(char *incomingMsg, const SOCKET &theClientSocket,Serveur * serv);
 	static void*  callThreadServeur(void *arg) { return ((Serveur*)arg)->ThreadServeurCoord(); }
+	static void*  callThreadClient(void *arg) { return ((Serveur*)arg)->ThreadClient(arg); }
 private:
 	void * ThreadServeurCoord();
-	void * LancerThreadClient(void * p_data);
-	void SendMessageToClient(const SOCKET &clientSocket, const std::string &msg, char * buffer);
-	void RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, char type);
+	void * ThreadClient(void * p_data);
+	void SendMessageToClient(const SOCKET &clientSocket, const std::string &msg);
+	void RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, char type, Serveur * serv);
 	bool ReadData(SOCKET sock, void *buf, int tailleFichier);
 };
 

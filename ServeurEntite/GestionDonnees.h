@@ -7,6 +7,7 @@
 #include <vector>
 #include <random>
 #include <ctime>
+#include <algorithm>
 
 struct UserData {
 	__int64 IMEI;
