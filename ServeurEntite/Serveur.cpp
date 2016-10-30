@@ -117,31 +117,94 @@ bool Serveur::Triage(const std::string &str, const MessageType &msgType) {
 void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, Serveur * serv) {
 	std::string str = incomingMsg;
 
-	//Protocole 1 == demande de recontre à l'entité
-	if (Triage(str, CAN_I_MEET_ORTHOS)) {
-		// msg like 05-IMEI
-		std::string data1 = str.substr(3);//retrait entete
-		if (serv->mesDonnees.CanMeetOrthos(_atoi64(data1.c_str()))) {
-			data1 = MsgTypeString[REPONSE_MEETING] + 'y';
+	//Protocole 1 == demande les coordonnées d'Orthos
+	if (Triage(str, CLIENT_ASK_COORD)) {
+		std::cout << "Un client demande les coordonnees d'Orthos" << std::endl;
+		Sleep(100);
+		std::string reponse = MsgTypeString[SEND_COOR_TO_CLIENT];
+		pthread_mutex_lock(&mutex_coord);
+		reponse += serv->Orthos.GetSDCoord();
+		pthread_mutex_unlock(&mutex_coord);
+
+		SendMessageToClient(theClientSocket,reponse);
+	}
+	//Protocole 2 == demande de recontre à l'entité
+	else if (Triage(str, CLIENT_ASK_MEET_ORTHOS)) {
+		// msg like 05-ID
+		std::cout << "Un client a demande s'il pouvait rencontrer Orthos" << std::endl;
+		std::vector<std::string> subString = split(str, '-');
+		unsigned int val = 1;
+		if (subString.size() < val ) {
+			return;
+		}
+		std::string reponse = MsgTypeString[REPONSE_MEETING_TO_CLIENT];
+		if (serv->mesDonnees.CanMeetOrthos(subString[1])) {
+			reponse += "y-";
+			std::cout << "Je l'ai autorise" << std::endl;
 		}
 		else {
-			data1 = MsgTypeString[REPONSE_MEETING] + 'n';	
-		}
-		SendMessageToClient(theClientSocket, data1);
+			reponse += "n-";
+			std::cout << "J'ai rigole et je lui ai dit non" << std::endl;
+		}	
+
+		Sleep(100);
+		SendMessageToClient(theClientSocket, reponse);
 	}
-	//Protocole 2 == reception d'un souvenir du Client
-	else if (Triage(str, CLIENT_SEND_SOUVENIR)) {
-		// msg like 06-1546852-i
-		std::string infoTaille = str.substr(3);//retrait entete
-		std::string typeFichier = infoTaille.substr(infoTaille.find('-')+1);
-		infoTaille = infoTaille.substr(0,infoTaille.length()-2);
-		// recuperation de la taille
-		int tailleMsg = std::stoi(infoTaille);
-		RecvFileFromClient(theClientSocket,tailleMsg,typeFichier[0], serv);
+	//Protocole 3 == reception d'un souvenir du Client
+	else if (Triage(str, CLIENT_SENT_SOUVENIR)) {
+		std::vector<std::string> subString = split(str, '-');
+		if (subString.size() <3) {
+			return;
+		}
+		bool isImage;
+		SouvenirData sd;
+		std::string nomFichierRetourne;
+
+		if (subString[2] == "t") {
+			isImage = false;
+			sd.type = TYPE_SOUVENIR_TEXTE;
+			sd.nomDuFichier = "TXT" + std::to_string(++serv->mesDonnees.nbTextes);
+			sd.dateTimeInSecond = std::time(nullptr);
+			sd.phrase = subString[3];
+			nomFichierRetourne = sd.nomDuFichier;
+			serv->mesDonnees.AddSouvenir(sd);
+		}
+		else {
+			isImage = true;
+			sd.type = TYPE_SOUVENIR_IMAGE;
+			sd.nomDuFichier = "IMG" + std::to_string(++serv->mesDonnees.nbImages) + ".jpg";
+			sd.dateTimeInSecond = std::time(nullptr);
+			sd.phrase = " ";
+			serv->mesDonnees.AddSouvenir(sd);
+			int tailleMsg = std::stoi(subString[1]);
+			RecvFileFromClient(theClientSocket, tailleMsg, serv, sd.nomDuFichier);
+		}
+
 		
-		Sleep(500);
-		// on renvoie un souvenir
-		SendFileToClient(theClientSocket, serv);
+
+		// pause avant envoi du nouveau nom et de la dateTime
+		Sleep(100);
+		std::string messageRetour = MsgTypeString[SEND_NEW_NAME_SOUVENIR_TO_CLIENT];
+		messageRetour += sd.nomDuFichier + "-" + std::to_string(sd.dateTimeInSecond) + "-";
+		SendMessageToClient(theClientSocket, messageRetour);
+
+		// on renvoie un souvenir et d'abors l'entete
+		pthread_mutex_lock(&mutex_lectureEcritureFichier);
+		SouvenirData sdToSend = serv->mesDonnees.GetSouvenir();
+		Sleep(100);
+		if(sdToSend.type == TYPE_SOUVENIR_TEXTE) {
+			std::string msgNS = MsgTypeString[SEND_SOUVENIR_TO_CLIENT];
+			msgNS += "t-";
+			msgNS += std::to_string(sdToSend.dateTimeInSecond) + "-";
+			msgNS += sdToSend.nomDuFichier + "-";
+			msgNS += sdToSend.phrase + "-";
+			SendMessageToClient(theClientSocket, msgNS);
+		}
+		else {
+			SendFileToClient(theClientSocket, serv, sdToSend);
+		}
+
+		pthread_mutex_unlock(&mutex_lectureEcritureFichier);
 	}
 }
 
@@ -155,11 +218,9 @@ void Serveur::SendMessageToClient(const SOCKET &clientSocket, const std::string 
 }
 
 // envoi d'un fichier au client ciblé
-void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv) {
+void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv, SouvenirData &sd) {
 	//recuperation d'un souvenir
-	pthread_mutex_lock(&mutex_lectureEcritureFichier);
-	SouvenirData sd = serv->mesDonnees.GetSouvenir();
-
+	
 	//essai de l'ouverture du fichier
 	std::ifstream fichierSouvenir(serv->mesDonnees.nomRepSouvenirData +sd.nomDuFichier, std::ifstream::binary);
 	bool erreur = false;
@@ -173,27 +234,22 @@ void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv) {
 		}
 		else {
 			//envoi de l'entete
-			std::string str = MsgTypeString[SERVER_SEND_SOUVENIR] + std::to_string(tailleFic);
-			if (sd.type == TYPE_SOUVENIR_IMAGE) {
-				str += "-i-";
-			}
-			else if (sd.type == TYPE_SOUVENIR_TEXTE) {
-				str += "-t-";
-			}
-			str += sd.nomDuFichier;
-			str += "-";
-			//07-[tailleFichier]-[type]-[nomFichier]
+			std::string str = MsgTypeString[SEND_SOUVENIR_TO_CLIENT];
+			str += "i-";
+			str += std::to_string(sd.dateTimeInSecond) + "-";
+			str += sd.nomDuFichier +"-";
+			str += std::to_string(tailleFic) +"-";
+			//07-[type]-[datetime]-[nomFichier]-[taille]-
 			SendMessageToClient(clientSocket, str);
 
-			std::string trolll = "a effeacer";
-			Sleep(500);
+			Sleep(100);
 			if (tailleFic > 0)
 			{
 				char buffer[1024];
 				do
 				{
 					int num = min(tailleFic, sizeof(buffer));
-					fichierSouvenir.read(buffer,num);//fread(buffer, 1, num, f);
+					fichierSouvenir.read(buffer,num);
 					num = fichierSouvenir.gcount();
 					if (num < 1)
 						erreur= false;
@@ -209,7 +265,6 @@ void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv) {
 	else {
 		int i = 0;
 	}
-	pthread_mutex_unlock(&mutex_lectureEcritureFichier);
 }
 
 //sous fonction
@@ -238,28 +293,7 @@ bool Serveur::SendData(SOCKET sock, void *buf, int buflen) {
 
 
 //Fonction de reception de fichier
-void Serveur::RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, char type, Serveur * serv) {
-	std::string nomFichier;
-	SouvenirData sd;
-	if (type == 'i') {
-		serv->mesDonnees.nbImages += 1;
-		nomFichier = "IMG";
-		nomFichier += std::to_string(serv->mesDonnees.nbImages);
-		nomFichier += ".jpg";
-		sd.type = TYPE_SOUVENIR_IMAGE;
-		sd.phrase = "n";
-	}
-	else if(type == 't'){
-		serv->mesDonnees.nbTextes += 1;
-		nomFichier = "TXT";
-		nomFichier += std::to_string(serv->mesDonnees.nbTextes);
-		nomFichier += ".txt";
-		sd.type = TYPE_SOUVENIR_TEXTE;
-	}
-	sd.nomDuFichier = nomFichier;
-	sd.dateTimeInSecond = std::time(nullptr);
-
-	if (true) {//sd.type == TYPE_SOUVENIR_IMAGE
+void Serveur::RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, Serveur * serv, std::string &nomFichier) {
 
 		//mutex pour ecriture lecture fichier
 		pthread_mutex_lock(&mutex_lectureEcritureFichier);
@@ -299,15 +333,13 @@ void Serveur::RecvFileFromClient(const SOCKET &clientSocket, int tailleFichier, 
 		}
 		fichierSouvenir.close();// fermeture du fichier
 		if (!error) {
-			serv->mesDonnees.AddSouvenir(sd);
 			std::cout << "Reception terminee : "<<nomFichier << std::endl;
 		}
 		else {
-			if (sd.type == TYPE_SOUVENIR_IMAGE)serv->mesDonnees.nbImages -= 1;
-			else serv->mesDonnees.nbTextes -= 1;
+			serv->mesDonnees.nbImages -= 1;
 		}
 		pthread_mutex_unlock(&mutex_lectureEcritureFichier);
-	}	
+	
 }
 
 // sous fonction ReadData
@@ -394,8 +426,13 @@ void * Serveur::ThreadClient(void *p_data) {
 			pthread_mutex_unlock(&mutex_vecSockCli);
 		}
 		else if (num == 0) {
+			pthread_mutex_lock(&mutex_vecSockCli);
 			std::cout << "Deconnexion d'un client" << std::endl;
 			enFonction = false;
+			std::vector<SOCKET>::iterator it;
+			it = std::find(serv->vecSocketClient.begin(), serv->vecSocketClient.end(), thisClientSocket);
+			serv->vecSocketClient.erase(it);
+			pthread_mutex_unlock(&mutex_vecSockCli);
 		}
 		else {
 			Receptionniste(buffer, thisClientSocket, serv);
@@ -403,7 +440,7 @@ void * Serveur::ThreadClient(void *p_data) {
 
 		
 	}
-
+	std::cout << "Fin du thread client" << std::endl;
 	return NULL;
 }
 int Serveur::LancerThreadClient(ToThreadArg &tta) {
@@ -417,4 +454,20 @@ int Serveur::LancerThreadClient(ToThreadArg &tta) {
 	}
 	vecThreadClient.push_back(clientThread);
 	return 0;
+}
+
+void Serveur::split(const std::string &s, char delim, std::vector<std::string> &elems) {
+	std::stringstream ss;
+	ss.str(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		elems.push_back(item);
+	}
+}
+
+
+std::vector<std::string> Serveur::split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, elems);
+	return elems;
 }

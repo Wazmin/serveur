@@ -12,7 +12,7 @@
 #include <thread>
 
 struct UserData {
-	__int64 IMEI;
+	std::string ID;
 	int dateTimeInSecond;//time of the lastest meeting
 	int timerNextMeetInSecond;//time in second before the next meeting
 };
@@ -43,13 +43,13 @@ public:
 	GestionDonnees();
 	void LoadRessources();
 	void SaveRessources();
-	void AddUser(__int64 IMEI);
+	void AddUser(std::string numID);
 	SouvenirData GetSouvenir();
 	void AddSouvenir(SouvenirData sd);
 	void InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant);
-	bool CanMeetOrthos(__int64 IMEI);
+	bool CanMeetOrthos(std::string &numID);
 private:
-	bool FindUserIndice(__int64 numIMEI, int &indice);
+	bool FindUserIndice(std::string &numID, int &indice);
 };
 
 #endif

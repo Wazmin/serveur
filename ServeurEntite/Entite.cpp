@@ -10,9 +10,10 @@ Entite::Entite(float x, float y) {
 
 // construction d'un string pour envoi des coordonnees
 std::string Entite::GetSDCoord() {
-	std::string str;
-	str += std::to_string(coord._x) + "-";
-	str += std::to_string(coord._y) + "_";
+	std::string str = std::to_string(coord._x);
+	str += '-';
+	str += std::to_string(coord._y);
+	str +='-';
 	return str;
 }
 

@@ -5,58 +5,58 @@ GestionDonnees::GestionDonnees(){}
 
 // chargement des donnees sauvegardées sur le serveur
 void GestionDonnees::LoadRessources() {
-nbImages = 0;
-nbTextes = 0;
-// vecteur UserData
-std::ifstream fileUserData(nomFichierUser);
-if (!fileUserData)
-{
-	std::cerr << "Erreur de lecture UserData\n";
-	return;
-}
-fileUserData.seekg(0, fileUserData.end);
-int tailleFic = fileUserData.tellg();
-fileUserData.seekg(0, fileUserData.beg);
-while (!fileUserData.eof() && tailleFic>0)
-{
-	struct UserData mUserData;
-	fileUserData >> mUserData.IMEI;
-	fileUserData >> mUserData.dateTimeInSecond;
-	fileUserData >> mUserData.timerNextMeetInSecond;
-	vecUserData.push_back(mUserData);
-}
-fileUserData.close();
-
-// vecteur souvenir
-std::ifstream fileSouvenirData(nomFichierSouvenir);
-if (!fileSouvenirData) {
-	std::cerr << "Erreur de lecture SouvenirData\n";
-	return;
-}
-int tmp;
-
-fileSouvenirData.seekg(0, fileSouvenirData.end);
-tailleFic = fileSouvenirData.tellg();
-fileSouvenirData.seekg(0, fileSouvenirData.beg);
-while (!fileSouvenirData.eof() && tailleFic>0)
-{
-	struct SouvenirData mSouvenirData;
-	fileSouvenirData >> tmp;
-	mSouvenirData.type = static_cast<TypeSouvenir>(tmp);
-	fileSouvenirData >> mSouvenirData.nomDuFichier;
-	fileSouvenirData >> mSouvenirData.dateTimeInSecond;
-	if (mSouvenirData.type == TYPE_SOUVENIR_TEXTE) {
-		fileSouvenirData >> mSouvenirData.phrase;
-		nbTextes++;
+	nbImages = 0;
+	nbTextes = 0;
+	// vecteur UserData
+	std::ifstream fileUserData(nomFichierUser);
+	if (!fileUserData)
+	{
+		std::cerr << "Erreur de lecture UserData\n";
+		return;
 	}
-	else {
-		nbImages++;
+	fileUserData.seekg(0, fileUserData.end);
+	int tailleFic = fileUserData.tellg();
+	fileUserData.seekg(0, fileUserData.beg);
+	while (!fileUserData.eof() && tailleFic>0)
+	{
+		struct UserData mUserData;
+		fileUserData >> mUserData.ID;
+		fileUserData >> mUserData.dateTimeInSecond;
+		fileUserData >> mUserData.timerNextMeetInSecond;
+		vecUserData.push_back(mUserData);
 	}
-	vecSouvenirData.push_back(mSouvenirData);
-}
-fileSouvenirData.close();
+	fileUserData.close();
 
-std::cout << "Ressources DataUser et Souvenirs chargees !" << std::endl;
+	// vecteur souvenir
+	std::ifstream fileSouvenirData(nomFichierSouvenir);
+	if (!fileSouvenirData) {
+		std::cerr << "Erreur de lecture SouvenirData\n";
+		return;
+	}
+	int tmp;
+
+	fileSouvenirData.seekg(0, fileSouvenirData.end);
+	tailleFic = fileSouvenirData.tellg();
+	fileSouvenirData.seekg(0, fileSouvenirData.beg);
+	while (!fileSouvenirData.eof() && tailleFic>0)
+	{
+		struct SouvenirData mSouvenirData;
+		fileSouvenirData >> tmp;
+		mSouvenirData.type = static_cast<TypeSouvenir>(tmp);
+		fileSouvenirData >> mSouvenirData.nomDuFichier;
+		fileSouvenirData >> mSouvenirData.dateTimeInSecond;
+		if (mSouvenirData.type == TYPE_SOUVENIR_TEXTE) {
+			fileSouvenirData >> mSouvenirData.phrase;
+			nbTextes++;
+		}
+		else {
+			nbImages++;
+		}
+		vecSouvenirData.push_back(mSouvenirData);
+	}
+	fileSouvenirData.close();
+
+	std::cout << "Ressources DataUser et Souvenirs chargees !" << std::endl;
 }
 
 // sauvegarde des ressources dans un fichier
@@ -70,7 +70,7 @@ void GestionDonnees::SaveRessources() {
 	}
 
 	for (auto ud : vecUserData) {
-		fileUserData << ud.IMEI << " " << ud.dateTimeInSecond << " " << ud.timerNextMeetInSecond << "\n";
+		fileUserData << ud.ID << " " << ud.dateTimeInSecond << " " << ud.timerNextMeetInSecond << "\n";
 	}
 	fileUserData.close();
 
@@ -93,13 +93,13 @@ void GestionDonnees::SaveRessources() {
 }
 
 //Ajout d'un utilisateur à la bonne place
-void GestionDonnees::AddUser(__int64 numIMEI) {
+void GestionDonnees::AddUser(std::string numID) {
 	struct UserData ud;
-	ud.IMEI = numIMEI;
+	ud.ID = numID;
 	ud.dateTimeInSecond = std::time(nullptr);
 	ud.timerNextMeetInSecond = timeBeforeNextMeeting;
 	int indiceToInsert;
-	FindUserIndice(numIMEI, indiceToInsert);
+	FindUserIndice(numID, indiceToInsert);
 	std::vector<UserData>::iterator it;
 	it = vecUserData.begin();
 	it += indiceToInsert;
@@ -153,11 +153,11 @@ void GestionDonnees::InsertSouvenir(SouvenirData sd, int dateTimeSouvenirSuivant
 }
 
 // CanMeetOrthos : est-ce que le joueur peut rencontrer Orthos
-bool GestionDonnees::CanMeetOrthos(__int64 numIMEI) {
+bool GestionDonnees::CanMeetOrthos(std::string &numID) {
 	int indiceUserData;
 	
-	if (!FindUserIndice(numIMEI, indiceUserData)) {// non trouvé, on l'ajoute et renvoie vrai
-		AddUser(numIMEI);
+	if (!FindUserIndice(numID, indiceUserData)) {// non trouvé, on l'ajoute et renvoie vrai
+		AddUser(numID);
 		return true;
 	}
 	else {// on l'a trouvé, verifions si il peut la rencontrer
@@ -175,24 +175,27 @@ bool GestionDonnees::CanMeetOrthos(__int64 numIMEI) {
 
 //recherche de l'indice d'un utilisateur dans le vector DataUser
 // retourne si il a trouvé l'utilisateur et met a jour l'indice
-bool GestionDonnees::FindUserIndice(__int64 numIMEI, int &indice) {
-	if (vecUserData.size() <= 0)return 0;
+bool GestionDonnees::FindUserIndice(std::string &numID, int &indice) {
+	if (vecUserData.size() <= 0) {
+		indice = 0;
+		return 0;
+	}
 	int bas(0), milieu(0), haut(vecUserData.size() - 1);
 
 	do {
 		milieu = (bas + haut) / 2;
-		if (numIMEI == vecUserData[milieu].IMEI) {
+		if (numID == vecUserData[milieu].ID) {
 			indice = milieu;
 			return true;
 		}
-		else if (numIMEI < vecUserData[milieu].IMEI) {
+		else if (numID < vecUserData[milieu].ID) {
 			haut = milieu - 1;
 		}
 		else {
 			bas = milieu + 1;
 		}
 
-	} while ((numIMEI != vecUserData[milieu].IMEI) || (bas>haut));
+	} while ((numID != vecUserData[milieu].ID) || (bas>haut));
 
 	//cas où l'on a pas trouvé l'utilisateur
 	indice = milieu;
