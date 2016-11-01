@@ -1,7 +1,9 @@
 #include "Entite.h"
 
 //constructeur
-Entite::Entite(){}
+Entite::Entite(){
+	isMoving = false;
+}
 
 Entite::Entite(float x, float y) {
 	this->coord._x = x;
@@ -28,4 +30,33 @@ std::string Entite::GetSDMood() {
 void Entite::tmpInit() {
 	this->coord._x = 42.4242;
 	this->coord._y = 13.3713;
+}
+
+// recuperation is moving
+bool Entite::GetIsMoving() {
+	return isMoving;
+}
+// set is moving
+void Entite::SetIsMoving(bool b) {
+	isMoving = b;
+}
+
+//charge le graph pour les deplacements de l'entité
+void Entite::LoadGraph() {
+	std::ifstream fileUserData("PointEntiteGPS.csv");
+
+	if (!fileUserData)
+	{
+		std::cerr << "Erreur de lecture PointEntiteGPS.csv\n";
+		return;
+	}
+	fileUserData.seekg(0, fileUserData.end);
+	int tailleFic = fileUserData.tellg();
+	fileUserData.seekg(0, fileUserData.beg);
+
+	while (!fileUserData.eof() && tailleFic>0) {
+
+	}
+
+	fileUserData.close();
 }
