@@ -157,6 +157,7 @@
     <ClInclude Include="Entite.h" />
     <ClInclude Include="GestionDonnees.h" />
     <ClInclude Include="Serveur.h" />
+    <ClInclude Include="Timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -119,12 +119,14 @@ void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, S
 
 	//Protocole 1 == demande les coordonnées d'Orthos
 	if (Triage(str, CLIENT_ASK_COORD)) {
-		std::cout << "Un client demande les coordonnees d'Orthos" << std::endl;
+		//std::cout << "Un client demande les coordonnees d'Orthos" << std::endl;
 		Sleep(100);
+		Orthos.SetCanMove(false);
 		std::string reponse = MsgTypeString[SEND_COOR_TO_CLIENT];
 		pthread_mutex_lock(&mutex_coord);
 		reponse += serv->Orthos.GetSDCoord();
 		pthread_mutex_unlock(&mutex_coord);
+		Orthos.SetCanMove(true);
 
 		SendMessageToClient(theClientSocket,reponse);
 	}
@@ -185,7 +187,9 @@ void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, S
 		// pause avant envoi du nouveau nom et de la dateTime
 		Sleep(100);
 		std::string messageRetour = MsgTypeString[SEND_NEW_NAME_SOUVENIR_TO_CLIENT];
-		messageRetour += sd.nomDuFichier + "-" + std::to_string(sd.dateTimeInSecond) + "-";
+		messageRetour += sd.nomDuFichier + "-";
+		messageRetour += std::to_string(sd.dateTimeInSecond) + "-";
+		std::cout << "Envoi au client le nouveau nom : "<<messageRetour << std::endl;
 		SendMessageToClient(theClientSocket, messageRetour);
 
 		// on renvoie un souvenir et d'abors l'entete
@@ -198,6 +202,7 @@ void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, S
 			msgNS += std::to_string(sdToSend.dateTimeInSecond) + "-";
 			msgNS += sdToSend.nomDuFichier + "-";
 			msgNS += sdToSend.phrase + "-";
+			std::cout << "Envoi au client la phrase: " << msgNS << std::endl;
 			SendMessageToClient(theClientSocket, msgNS);
 		}
 		else {
@@ -210,10 +215,16 @@ void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, S
 
 //sous fonction pour l'envoi de donnée
 void Serveur::SendMessageToClient(const SOCKET &clientSocket, const std::string &msg) {
+	
+	
 	int tailleMsg= msg.length() + 1;
 	char *buffer = new char[tailleMsg];
-	strncpy_s(buffer, tailleMsg, msg.c_str(), tailleMsg);
-	send(clientSocket, buffer, tailleMsg, 0);
+	memset(buffer,0,tailleMsg);
+	strncpy_s(buffer, tailleMsg, msg.c_str(), msg.length());
+	send(clientSocket, buffer, tailleMsg-1, 0);
+	
+
+	//send(clientSocket, msg.c_str(), msg.size(), 0);
 	delete[] buffer;
 }
 
@@ -240,12 +251,14 @@ void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv, Souve
 			str += sd.nomDuFichier +"-";
 			str += std::to_string(tailleFic) +"-";
 			//07-[type]-[datetime]-[nomFichier]-[taille]-
+			std::cout << "Envoi au client l'entete : " << str << std::endl;
 			SendMessageToClient(clientSocket, str);
 
 			Sleep(100);
 			if (tailleFic > 0)
 			{
 				char buffer[1024];
+				memset(buffer,0,1024);
 				do
 				{
 					int num = min(tailleFic, sizeof(buffer));
@@ -257,6 +270,8 @@ void Serveur::SendFileToClient(const SOCKET &clientSocket, Serveur * serv, Souve
 						erreur= false;
 					tailleFic -= num;
 				} while (tailleFic > 0 && !erreur);
+
+
 			}
 		}
 		fichierSouvenir.close();

@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv) {
 	Serveur leServeur;
-	leServeur.Initialiser(1234);
+	leServeur.Initialiser(42137);
 	leServeur.Lancer();
 
 	//while (true)
