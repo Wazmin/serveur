@@ -16,7 +16,6 @@
 #include "Timer.h"
 
 
-
 struct coordonnees {
 	float _x;
 	float _y;
@@ -28,6 +27,14 @@ struct Noeud {
 	std::vector<Noeud*> voisins;
 };
 
+struct ToThreadArg2 {
+	coordonnees *_coord;
+	Noeud *origine;
+	Noeud *destination;
+	std::vector<Noeud> vecGraph;
+	bool *cMove;
+};
+
 class Entite {
 private:
 	struct coordonnees coord;
@@ -36,6 +43,7 @@ private:
 	std::vector<Noeud> Graph;
 	Noeud *origine;
 	Noeud *destination;
+	ToThreadArg2 argToPass;
 public :
 	Entite();
 	Entite(float x, float y);
@@ -48,11 +56,14 @@ public :
 	void tmpInit();
 	void LoadGraph();
 	void *ThreadMove(void *p_data);
+	int Entite::LancerThreadEntite(ToThreadArg2 &tta);
 private:
 	float Distance(coordonnees &pos1, coordonnees &pos2);
 	float Distance(coordonnees &pos1, Noeud *pos2);
 	void split(const std::string &s, char delim, std::vector<std::string> &elems);
 	std::vector<std::string> split(const std::string &s, char delim);
+public:
+	static void* callThreadEntite(void *arg) { return ((Entite*)arg)->ThreadMove(arg); }
 };
 
 #endif

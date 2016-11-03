@@ -3,9 +3,9 @@
 Serveur::Serveur(){}
 
 // initialisation du serveur
-int Serveur::Initialiser(int numPort) {
+int Serveur::Initialiser(char *port/*int numPort*/) {
 	// port du serveur
-	this->numPort = numPort;
+	this->numPort = std::stoi(port);
 	this->enMarche = false;
 	if (WSAStartup(MAKEWORD(2, 0), &this->WSAData) != 0 ) {
 		std::cerr << "Erreur Initialiser() - WSAStartup" << std::endl;
@@ -19,7 +19,7 @@ int Serveur::Initialiser(int numPort) {
 
 	Orthos.tmpInit();
 	mesDonnees.LoadRessources();
-
+	lockAskCoord = false;
 	return 0;
 }
 
@@ -121,12 +121,12 @@ void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, S
 	if (Triage(str, CLIENT_ASK_COORD)) {
 		//std::cout << "Un client demande les coordonnees d'Orthos" << std::endl;
 		Sleep(100);
-		Orthos.SetCanMove(false);
 		std::string reponse = MsgTypeString[SEND_COOR_TO_CLIENT];
 		pthread_mutex_lock(&mutex_coord);
+		Orthos.SetCanMove(false);
 		reponse += serv->Orthos.GetSDCoord();
-		pthread_mutex_unlock(&mutex_coord);
 		Orthos.SetCanMove(true);
+		pthread_mutex_unlock(&mutex_coord);
 
 		SendMessageToClient(theClientSocket,reponse);
 	}

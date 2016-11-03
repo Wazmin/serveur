@@ -56,6 +56,7 @@ private:
 	WSAData WSAData;
 	int numPort;
 	bool enMarche;
+	bool lockAskCoord;
 	SOCKET mySocket;
 	SOCKET clientSocket;
 	SOCKADDR_IN sin;
@@ -75,7 +76,7 @@ public:
 	
 public:
 	Serveur();
-	int Initialiser(int numPort = 1234);
+	int Initialiser(char *port);
 	int Lancer();
 	int LancerThreadServeurCoord();
 	int LancerThreadClient(ToThreadArg &tta);

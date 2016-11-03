@@ -16,6 +16,7 @@ std::string Entite::GetSDCoord() {
 	str += '-';
 	str += std::to_string(coord._y);
 	str +='-';
+	std::cout <<str << std::endl;
 	return str;
 }
 
@@ -33,6 +34,14 @@ void Entite::tmpInit() {
 	LoadGraph();
 	origine = &Graph[0];
 	destination = &Graph[1];
+
+	argToPass._coord = &this->coord;
+	argToPass.origine = this->origine;
+	argToPass.destination = this->destination;
+	argToPass.vecGraph = this->Graph;
+	argToPass.cMove = &canMove;
+
+	LancerThreadEntite(argToPass);
 }
 
 // recuperation is moving
@@ -67,8 +76,8 @@ void Entite::LoadGraph() {
 
 	std::string line;
 	char delimitateur = ';';
-	int nbNoeuds;
-	fileUserData >> nbNoeuds;
+	int nbNoeuds =37;
+	//fileUserData >> nbNoeuds;
 
 	//creation des noeuds dans le vecteur
 	for (int i = 0;i < nbNoeuds;i++) {
@@ -96,32 +105,88 @@ void Entite::LoadGraph() {
 }
 
 void * Entite::ThreadMove(void *p_data) {
-	//est-ce qu'on est arrivé à destination
-	if (coord._x == destination->_x && coord._y == destination->_y) {
-		// selection du prochain point
-		int randomMax = 0;
-		randomMax = destination->voisins.size();
-		std::default_random_engine generator;
-		std::uniform_int_distribution<int> distribution(0, randomMax-1);
-		int indiceRand = distribution(generator);
-		// on boucle tant que qu'on retombe sur l'origine
-		while (destination->voisins[indiceRand] == origine) {
-			indiceRand = distribution(generator);
+	ToThreadArg2 *tta = static_cast<ToThreadArg2*>(p_data);
+
+	NYTimer timerUpdatePos;
+	NYTimer timerDeplacement;
+	float distanceD = 0.01;
+	coordonnees *coordD = tta->_coord;
+	Noeud *orig = tta->origine;
+	Noeud *dest = tta->destination;
+	std::vector<Noeud> leGraph = tta->vecGraph;
+	bool _canMove = tta->cMove;
+
+	while (true) {
+		if (timerUpdatePos.getElapsedSeconds() > 0.1)
+		{
+			timerUpdatePos.getElapsedSeconds(true);
+			if (_canMove) {
+				//est-ce qu'on est arrivé à destination
+				if (coordD->_x == dest->_x && coordD->_y == dest->_y) {
+					// selection du prochain point
+					int randomMax = 0;
+					randomMax = dest->voisins.size();
+					std::default_random_engine generator;
+					std::uniform_int_distribution<int> distribution(0, randomMax - 1);
+					int indiceRand = distribution(generator);
+
+					// on boucle tant que qu'on retombe sur l'origine
+					while (dest->voisins[indiceRand] == orig) {
+						indiceRand = distribution(generator);
+					}
+
+					// on renseigne la prochaine destination
+					orig = dest;
+					dest = orig->voisins[indiceRand];
+				}
+				else {
+					float distanceRestante = Distance(*coordD, dest);
+					coordonnees vecDir;
+					vecDir._x = dest->_x - orig->_x;
+					vecDir._y = dest->_y - orig->_y;
+					float normeVecDir = std::sqrtf(std::powf(vecDir._x, 2) + std::powf(vecDir._y, 2));
+					//on normalise le vecteur
+					vecDir._x /= normeVecDir;
+					vecDir._y /= normeVecDir;
+
+					//creation du point temporaire
+					coordonnees ptTmp;
+					float tempsEcoule = timerDeplacement.getElapsedSeconds(true);
+					ptTmp._x = coordD->_x + vecDir._x * distanceD* tempsEcoule;
+					ptTmp._y = coordD->_y + vecDir._y * distanceD* tempsEcoule;
+
+					//on verifie qu'on ne depasse pas la distance
+					if (distanceRestante < Distance(*coordD, ptTmp)) {
+						coordD->_x = dest->_x;
+						coordD->_y = dest->_y;
+						//std::cout << "coordD x: " << coordD._x << " y: " << coordD._y << std::endl;
+					}
+					else {
+						coordD->_x = ptTmp._x;
+						coordD->_y = ptTmp._y;
+						//std::cout << "coordD x: " << coordD._x << " y: " << coordD._y << std::endl;
+					}
+
+					//std::cout << "coord serv x: " << coord._x << " y: " << coord._y << std::endl;
+				}
+			}
+			
 		}
-		// on renseigne la prochaine destination
-		origine = destination;
-		destination = origine->voisins[indiceRand];
 	}
-	else {
-		float distanceRestante = Distance(coord,destination);
 
 
-	}
-	coordonnees vecDir;
-	vecDir._x = destination->_x - origine->_x;
-	vecDir._y = destination->_y - origine->_y;
 
 	return NULL;
+}
+
+int Entite::LancerThreadEntite(ToThreadArg2 &tta) {
+	pthread_t clientThread;
+	if (pthread_create(&clientThread, NULL, callThreadEntite, &tta) != 0) {
+		//impossible de lancer le thread client !
+		std::cerr << "impossible de lancer le thread Entite !" << std::endl;
+		return 1;
+	}
+	return 0;
 }
 
 float Entite::Distance(coordonnees &pos1, coordonnees &pos2) {
