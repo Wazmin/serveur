@@ -54,12 +54,14 @@ public :
 	std::string GetSDCoord();
 	std::string GetSDMood();
 	void tmpInit();
+	void ServCoord();
 	void LoadGraph();
 	void *ThreadMove(void *p_data);
 	int Entite::LancerThreadEntite(ToThreadArg2 &tta);
 private:
 	float Distance(coordonnees &pos1, coordonnees &pos2);
 	float Distance(coordonnees &pos1, Noeud *pos2);
+	float Distance(coordonnees *pos1, Noeud *pos2);
 	void split(const std::string &s, char delim, std::vector<std::string> &elems);
 	std::vector<std::string> split(const std::string &s, char delim);
 public:

@@ -16,7 +16,7 @@ std::string Entite::GetSDCoord() {
 	str += '-';
 	str += std::to_string(coord._y);
 	str +='-';
-	std::cout <<str << std::endl;
+	//std::cout <<str << std::endl;
 	return str;
 }
 
@@ -34,6 +34,7 @@ void Entite::tmpInit() {
 	LoadGraph();
 	origine = &Graph[0];
 	destination = &Graph[1];
+	canMove = true;
 
 	argToPass._coord = &this->coord;
 	argToPass.origine = this->origine;
@@ -41,8 +42,13 @@ void Entite::tmpInit() {
 	argToPass.vecGraph = this->Graph;
 	argToPass.cMove = &canMove;
 
+	
+}
+
+void Entite::ServCoord() {
 	LancerThreadEntite(argToPass);
 }
+
 
 // recuperation is moving
 bool Entite::GetIsMoving() {
@@ -105,70 +111,81 @@ void Entite::LoadGraph() {
 }
 
 void * Entite::ThreadMove(void *p_data) {
+
 	ToThreadArg2 *tta = static_cast<ToThreadArg2*>(p_data);
 
 	NYTimer timerUpdatePos;
 	NYTimer timerDeplacement;
-	float distanceD = 0.01;
+	//float distanceD = 0.0000070355802;
+	double distanceD = 0.000035355808;
+
 	coordonnees *coordD = tta->_coord;
 	Noeud *orig = tta->origine;
 	Noeud *dest = tta->destination;
 	std::vector<Noeud> leGraph = tta->vecGraph;
-	bool _canMove = tta->cMove;
+	bool _canMove = *tta->cMove;
+
+	coordonnees ptTmp;
+	coordonnees vecDir;
+	vecDir._x = dest->_x - coordD->_x;
+	vecDir._y = dest->_y - coordD->_y;
+	float normeVecDir = std::sqrtf(std::powf(vecDir._x, 2) + std::powf(vecDir._y, 2));
+	//on normalise le vecteur
+	vecDir._x /= normeVecDir;
+	vecDir._y /= normeVecDir;
 
 	while (true) {
 		if (timerUpdatePos.getElapsedSeconds() > 0.1)
 		{
 			timerUpdatePos.getElapsedSeconds(true);
-			if (_canMove) {
-				//est-ce qu'on est arrivé à destination
-				if (coordD->_x == dest->_x && coordD->_y == dest->_y) {
+
+			if (_canMove)
+			{
+				float distanceRestante = Distance(*coordD, dest);
+					
+
+				vecDir._x = dest->_x - coordD->_x;
+				vecDir._y = dest->_y - coordD->_y;
+				float normeVecDir = std::sqrtf(std::powf(vecDir._x, 2) + std::powf(vecDir._y, 2));
+				//on normalise le vecteur
+				vecDir._x /= normeVecDir;
+				vecDir._y /= normeVecDir;
+
+				//creation du point temporaire
+					
+				float tempsEcoule = timerDeplacement.getElapsedSeconds(true);
+				double movementMagnitude = distanceD* tempsEcoule;
+
+				if (movementMagnitude < distanceRestante)
+				{
+					coordD->_x = coordD->_x + vecDir._x * movementMagnitude;
+					coordD->_y = coordD->_y + vecDir._y * movementMagnitude;
+				}
+				else
+				{
+					coordD->_x = dest->_x;
+					coordD->_y = dest->_y;
+
 					// selection du prochain point
 					int randomMax = 0;
 					randomMax = dest->voisins.size();
 					std::default_random_engine generator;
 					std::uniform_int_distribution<int> distribution(0, randomMax - 1);
-					int indiceRand = distribution(generator);
 
 					// on boucle tant que qu'on retombe sur l'origine
-					while (dest->voisins[indiceRand] == orig) {
+					int indiceRand;
+					do {
 						indiceRand = distribution(generator);
-					}
+					} while (dest->voisins[indiceRand] == orig);
+					std::cout << "nouveau point !" << std::endl;
 
 					// on renseigne la prochaine destination
 					orig = dest;
 					dest = orig->voisins[indiceRand];
 				}
-				else {
-					float distanceRestante = Distance(*coordD, dest);
-					coordonnees vecDir;
-					vecDir._x = dest->_x - orig->_x;
-					vecDir._y = dest->_y - orig->_y;
-					float normeVecDir = std::sqrtf(std::powf(vecDir._x, 2) + std::powf(vecDir._y, 2));
-					//on normalise le vecteur
-					vecDir._x /= normeVecDir;
-					vecDir._y /= normeVecDir;
 
-					//creation du point temporaire
-					coordonnees ptTmp;
-					float tempsEcoule = timerDeplacement.getElapsedSeconds(true);
-					ptTmp._x = coordD->_x + vecDir._x * distanceD* tempsEcoule;
-					ptTmp._y = coordD->_y + vecDir._y * distanceD* tempsEcoule;
 
-					//on verifie qu'on ne depasse pas la distance
-					if (distanceRestante < Distance(*coordD, ptTmp)) {
-						coordD->_x = dest->_x;
-						coordD->_y = dest->_y;
-						//std::cout << "coordD x: " << coordD._x << " y: " << coordD._y << std::endl;
-					}
-					else {
-						coordD->_x = ptTmp._x;
-						coordD->_y = ptTmp._y;
-						//std::cout << "coordD x: " << coordD._x << " y: " << coordD._y << std::endl;
-					}
-
-					//std::cout << "coord serv x: " << coord._x << " y: " << coord._y << std::endl;
-				}
+				//std::cout << "coord serv x: " << coord._x << " y: " << coord._y << std::endl;
 			}
 			
 		}
@@ -195,6 +212,10 @@ float Entite::Distance(coordonnees &pos1, coordonnees &pos2) {
 
 float Entite::Distance(coordonnees &pos1, Noeud *pos2) {
 	return std::sqrtf(std::pow((pos1._x - pos2->_x), 2) + pow((pos1._y - pos2->_y), 2));
+}
+
+float Entite::Distance(coordonnees *pos1, Noeud *pos2) {
+	return std::sqrtf(std::pow((pos1->_x - pos2->_x), 2) + pow((pos1->_y - pos2->_y), 2));
 }
 
 void Entite::split(const std::string &s, char delim, std::vector<std::string> &elems) {

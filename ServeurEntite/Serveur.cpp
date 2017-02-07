@@ -18,6 +18,9 @@ int Serveur::Initialiser(char *port/*int numPort*/) {
 	this->sin.sin_port = htons(numPort);
 
 	Orthos.tmpInit();
+	if (this->numPort == 42138) {
+		Orthos.ServCoord();
+	}
 	mesDonnees.LoadRessources();
 	lockAskCoord = false;
 	return 0;
@@ -123,9 +126,9 @@ void Serveur::Receptionniste(char *incomingMsg, const SOCKET &theClientSocket, S
 		Sleep(100);
 		std::string reponse = MsgTypeString[SEND_COOR_TO_CLIENT];
 		pthread_mutex_lock(&mutex_coord);
-		Orthos.SetCanMove(false);
+		serv->Orthos.SetCanMove(false);
 		reponse += serv->Orthos.GetSDCoord();
-		Orthos.SetCanMove(true);
+		serv->Orthos.SetCanMove(true);
 		pthread_mutex_unlock(&mutex_coord);
 
 		SendMessageToClient(theClientSocket,reponse);
